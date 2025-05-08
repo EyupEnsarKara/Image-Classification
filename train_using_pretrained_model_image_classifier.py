@@ -130,8 +130,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer,
     mode='min',
     factor=0.1,
-    patience=3,
-    verbose=True
+    patience=3
 )
 
 # Train the classifier head of the pretrained ViT feature extractor model
