@@ -54,7 +54,17 @@ test_dir = 'yazlab-data/val'
 
 # Get automatic transforms from pretrained ViT weights
 pretrained_vit_transforms = pretrained_vit_weights.transforms()
-print(pretrained_vit_transforms)
+
+# Veri artırma için ek dönüşümler
+train_transforms = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(degrees=15),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+    transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0)),
+    *pretrained_vit_transforms.transforms
+])
+
+test_transforms = pretrained_vit_transforms
 
 # --- Cell ---
 
@@ -103,8 +113,8 @@ def create_dataloaders(
 # Setup dataloaders
 train_dataloader_pretrained, test_dataloader_pretrained, class_names = create_dataloaders(train_dir=train_dir,
                                                                                          test_dir=test_dir,
-                                                                                         transform=pretrained_vit_transforms,
-                                                                                         batch_size=8)  # Batch size'ı daha da düşürdük
+                                                                                         transform=train_transforms,  # Eğitim için artırılmış veri
+                                                                                         batch_size=8)
 
 # --- Cell ---
 
@@ -115,6 +125,15 @@ optimizer = torch.optim.Adam(params=pretrained_vit.parameters(),
                              lr=1e-4)  # Learning rate'i düşürdük
 loss_fn = torch.nn.CrossEntropyLoss()
 
+# Learning rate scheduler ekle
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer,
+    mode='min',
+    factor=0.1,
+    patience=3,
+    verbose=True
+)
+
 # Train the classifier head of the pretrained ViT feature extractor model
 set_seeds()
 pretrained_vit_results = engine.train(model=pretrained_vit,
@@ -122,7 +141,8 @@ pretrained_vit_results = engine.train(model=pretrained_vit,
                                       test_dataloader=test_dataloader_pretrained,
                                       optimizer=optimizer,
                                       loss_fn=loss_fn,
-                                      epochs=10,
+                                      scheduler=scheduler,  # Scheduler'ı ekle
+                                      epochs=15,
                                       device=device)
 
 # --- Cell ---

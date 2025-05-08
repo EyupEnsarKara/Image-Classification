@@ -122,7 +122,8 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           loss_fn: torch.nn.Module,
           epochs: int,
-          device: torch.device) -> Dict[str, List]:
+          device: torch.device,
+          scheduler: torch.optim.lr_scheduler._LRScheduler = None) -> Dict[str, List]:
     """Trains and tests a PyTorch model.
 
     Passes a target PyTorch models through train_step() and test_step()
@@ -137,6 +138,7 @@ def train(model: torch.nn.Module,
     test_dataloader: A DataLoader instance for the model to be tested on.
     optimizer: A PyTorch optimizer to help minimize the loss function.
     loss_fn: A PyTorch loss function to calculate loss on both datasets.
+    scheduler: A PyTorch learning rate scheduler.
     epochs: An integer indicating how many epochs to train for.
     device: A target device to compute on (e.g. "cuda" or "cpu").
 
@@ -175,6 +177,10 @@ def train(model: torch.nn.Module,
           dataloader=test_dataloader,
           loss_fn=loss_fn,
           device=device)
+
+        # Scheduler step
+        if scheduler is not None:
+            scheduler.step(test_loss)
 
         # Print out what's happening
         print(
