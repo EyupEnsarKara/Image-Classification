@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['vision.velyun.com.tr', 'localhost', '127.0.0.1']
 
+CSRF_TRUSTED_ORIGINS = ['https://vision.velyun.com.tr']
+
 
 # Application definition
 
