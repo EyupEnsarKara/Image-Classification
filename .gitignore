@@ -1,4 +1,4 @@
- # Python
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -49,6 +49,7 @@ ENV/
 *.pt
 *.pth
 *.onnx
+yazlab-data/
 
 # Logs
 logs/
