@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-%uw!%6#@t3)k4q4i2!bngv4p_7--#jn03($w&#69ww-m7$=9$b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['vision.velyun.com.tr', 'localhost', '127.0.0.1']
 
 
 # Application definition
