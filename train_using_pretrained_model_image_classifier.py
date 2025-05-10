@@ -137,8 +137,8 @@ def create_dataloaders(
 # Setup dataloaders
 train_dataloader_pretrained, test_dataloader_pretrained, class_names = create_dataloaders(train_dir=train_dir,
                                                                                          test_dir=test_dir,
-                                                                                         transform=train_transforms,  # Eğitim için artırılmış veri
-                                                                                         batch_size=8)
+                                                                                         transform=train_transforms,
+                                                                                         batch_size=4)  # Batch size'ı 8'den 4'e düşürdük
 
 # --- Cell ---
 
@@ -146,8 +146,8 @@ from going_modular.going_modular import engine
 
 # Create optimizer and loss function
 optimizer = torch.optim.AdamW(params=pretrained_vit.parameters(), 
-                            lr=1e-4,
-                            weight_decay=0.01)  # L2 regularization
+                            lr=5e-5,  # Learning rate'i düşürdük çünkü daha küçük batch size kullanıyoruz
+                            weight_decay=0.01)
 
 loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=0.1)  # Label smoothing
 
