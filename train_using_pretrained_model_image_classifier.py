@@ -25,10 +25,29 @@ for parameter in pretrained_vit.parameters():
     parameter.requires_grad = False
     
 # 4. Change the classifier head 
-class_names = sorted(os.listdir('yazlab-data/train'))  # Sınıfları alfabetik sıralı olarak al
+class_names = sorted(os.listdir('yazlab-data/train'))
 
 set_seeds()
-pretrained_vit.heads = nn.Linear(in_features=768, out_features=len(class_names)).to(device)
+# Daha karmaşık bir classifier head
+class CustomHead(nn.Module):
+    def __init__(self, in_features, out_features):
+        super().__init__()
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, out_features)
+        )
+    
+    def forward(self, x):
+        return self.classifier(x)
+
+pretrained_vit.heads = CustomHead(in_features=768, out_features=len(class_names)).to(device)
 # pretrained_vit # uncomment for model output
 
 # --- Cell ---
@@ -58,9 +77,14 @@ pretrained_vit_transforms = pretrained_vit_weights.transforms()
 # Veri artırma için ek dönüşümler
 train_transforms = transforms.Compose([
     transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.3),
     transforms.RandomRotation(degrees=15),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+    transforms.RandomPerspective(distortion_scale=0.2, p=0.5),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
     transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0)),
+    transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+    transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
     pretrained_vit_transforms
 ])
 
@@ -121,28 +145,39 @@ train_dataloader_pretrained, test_dataloader_pretrained, class_names = create_da
 from going_modular.going_modular import engine
 
 # Create optimizer and loss function
-optimizer = torch.optim.Adam(params=pretrained_vit.parameters(), 
-                             lr=1e-4)  # Learning rate'i düşürdük
-loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(params=pretrained_vit.parameters(), 
+                            lr=1e-4,
+                            weight_decay=0.01)  # L2 regularization
 
-# Learning rate scheduler ekle
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=0.1)  # Label smoothing
+
+# Learning rate scheduler
+scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
     optimizer,
-    mode='min',
-    factor=0.1,
-    patience=3
+    T_0=5,  # İlk restart periyodu
+    T_mult=2,  # Her restart sonrası periyodu 2 katına çıkar
+    eta_min=1e-6  # Minimum learning rate
 )
+
+# Gradient clipping için
+torch.nn.utils.clip_grad_norm_(pretrained_vit.parameters(), max_norm=1.0)
+
+# Early stopping için
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+early_stopping_patience = 5
+best_loss = float('inf')
+patience_counter = 0
 
 # Train the classifier head of the pretrained ViT feature extractor model
 set_seeds()
 pretrained_vit_results = engine.train(model=pretrained_vit,
-                                      train_dataloader=train_dataloader_pretrained,
-                                      test_dataloader=test_dataloader_pretrained,
-                                      optimizer=optimizer,
-                                      loss_fn=loss_fn,
-                                      scheduler=scheduler,  # Scheduler'ı ekle
-                                      epochs=15,
-                                      device=device)
+                                    train_dataloader=train_dataloader_pretrained,
+                                    test_dataloader=test_dataloader_pretrained,
+                                    optimizer=optimizer,
+                                    loss_fn=loss_fn,
+                                    scheduler=scheduler,
+                                    epochs=30,  # Daha fazla epoch
+                                    device=device)
 
 # --- Cell ---
 
