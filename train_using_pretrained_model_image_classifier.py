@@ -20,9 +20,9 @@ pretrained_vit_weights = torchvision.models.ViT_B_16_Weights.DEFAULT
 # 2. Setup a ViT model instance with pretrained weights
 pretrained_vit = torchvision.models.vit_b_16(weights=pretrained_vit_weights).to(device)
 
-# 3. Freeze the base parameters
+# 3. Tüm parametreleri eğitilebilir yap
 for parameter in pretrained_vit.parameters():
-    parameter.requires_grad = False
+    parameter.requires_grad = True
     
 # 4. Change the classifier head 
 class_names = sorted(os.listdir('yazlab-data/train'))  # Sınıfları alfabetik sıralı olarak al
