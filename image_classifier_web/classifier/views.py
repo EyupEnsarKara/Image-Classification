@@ -89,12 +89,74 @@ def classify_single_image(model, class_names, image_path):
     except Exception as e:
         return {"error": str(e)}
 
+def process_download_request(request, model_id, image_id=None, is_zip=False):
+    """GET isteği ile indirme işlemi için yardımcı fonksiyon"""
+    try:
+        model_file = ModelFile.objects.get(id=model_id)
+        model, class_names = load_model(model_file)
+        
+        if is_zip:
+            # Zip analizi sonuçlarını oluşturmak için önce oturum değişkeninden verileri al
+            if 'zip_results' in request.session:
+                results = request.session['zip_results']
+                json_data = {
+                    "zip_analysis": results,
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                
+                response = HttpResponse(
+                    json.dumps(json_data, indent=4),
+                    content_type='application/json'
+                )
+                response['Content-Disposition'] = 'attachment; filename=zip_analysis_results.json'
+                return response
+            return JsonResponse({"error": "Geçerli bir ZIP analizi bulunamadı"}, status=404)
+        
+        # Tek görüntü için:
+        elif image_id:
+            try:
+                image_instance = UploadedImage.objects.get(id=image_id)
+                image_path = os.path.join(settings.MEDIA_ROOT, str(image_instance.image))
+                result = classify_single_image(model, class_names, image_path)
+                
+                if "error" not in result:
+                    json_data = {
+                        "image_url": request.build_absolute_uri(image_instance.image.url),
+                        "prediction": result,
+                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    
+                    response = HttpResponse(
+                        json.dumps(json_data, indent=4),
+                        content_type='application/json'
+                    )
+                    filename = f"image_analysis_{image_instance.image.name.split('/')[-1].split('.')[0]}.json"
+                    response['Content-Disposition'] = f'attachment; filename={filename}'
+                    return response
+                else:
+                    return JsonResponse({"error": result["error"]}, status=500)
+            except UploadedImage.DoesNotExist:
+                return JsonResponse({"error": "Görüntü bulunamadı"}, status=404)
+    except ModelFile.DoesNotExist:
+        return JsonResponse({"error": "Model bulunamadı"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
 def image_classification(request):
     models = ModelFile.objects.all()
     
     # JSON yanıtı isteniyor mu kontrol et
     want_json = request.GET.get('json', False) or request.POST.get('json', False)
     download_json = request.GET.get('download', False) or request.POST.get('download', False)
+    
+    # GET isteği ile indirme
+    if request.method == 'GET' and want_json and download_json:
+        model_id = request.GET.get('model')
+        image_id = request.GET.get('image_id')
+        is_zip = request.GET.get('is_zip', False)
+        
+        if model_id:
+            return process_download_request(request, model_id, image_id, is_zip)
     
     if request.method == 'POST':
         model_id = request.POST.get('model')
@@ -131,6 +193,9 @@ def image_classification(request):
                                 result = classify_single_image(model, class_names, image_path)
                                 result['filename'] = file
                                 results.append(result)
+                    
+                    # Oturum değişkenine sonuçları kaydet (GET isteği ile indirme için)
+                    request.session['zip_results'] = results
                     
                     json_data = {
                         "zip_analysis": results,
@@ -196,7 +261,8 @@ def image_classification(request):
                         'predictions_list': result['all_predictions'],
                         'models': models,
                         'selected_model': model_id,
-                        'json_data': json.dumps(json_data, indent=4)
+                        'json_data': json.dumps(json_data, indent=4),
+                        'image_id': image_instance.id
                     })
                 else:
                     if want_json:

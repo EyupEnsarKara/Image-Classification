@@ -193,7 +193,7 @@
                         <div id="collapseJson" class="accordion-collapse collapse" aria-labelledby="headingJson" data-bs-parent="#jsonAccordion">
                             <div class="accordion-body">
                                 <pre class="json-data">{{ json_data }}</pre>
-                                <a href="?json=true&download=true&model={{ selected_model }}" class="btn btn-sm btn-secondary mt-2">JSON Dosyasını İndir</a>
+                                <a href="{% url 'image_classification' %}?json=true&download=true&model={{ selected_model }}&image_id={{ image_id }}" class="btn btn-sm btn-secondary mt-2">JSON Dosyasını İndir</a>
                             </div>
                         </div>
                     </div>
@@ -237,7 +237,7 @@
                         <div id="collapseZipJson" class="accordion-collapse collapse" aria-labelledby="headingZipJson" data-bs-parent="#zipJsonAccordion">
                             <div class="accordion-body">
                                 <pre class="json-data">{{ json_data }}</pre>
-                                <a href="?json=true&download=true&model={{ selected_model }}" class="btn btn-sm btn-secondary mt-2">JSON Dosyasını İndir</a>
+                                <a href="{% url 'image_classification' %}?json=true&download=true&model={{ selected_model }}&is_zip=true" class="btn btn-sm btn-secondary mt-2">JSON Dosyasını İndir</a>
                             </div>
                         </div>
                     </div>
