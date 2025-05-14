@@ -216,18 +216,45 @@ def image_classification(request):
                 results = []
                 
                 try:
+                    print(f"[ZIP İŞLEME] ZIP dosyası alındı: {zip_file.name}, boyut: {zip_file.size} bayt")
+                    
                     # Zip dosyasını geçici dizine çıkar
+                    print(f"[ZIP İŞLEME] Dosya geçici dizine çıkarılıyor: {temp_dir}")
+                    start_time = datetime.datetime.now()
                     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                        zip_info_list = zip_ref.infolist()
+                        total_files = len(zip_info_list)
+                        image_count = sum(1 for info in zip_info_list if info.filename.lower().endswith(('.png', '.jpg', '.jpeg')))
+                        
+                        print(f"[ZIP İŞLEME] Toplam dosya sayısı: {total_files}, görüntü sayısı: {image_count}")
                         zip_ref.extractall(temp_dir)
                     
+                    extract_time = datetime.datetime.now()
+                    print(f"[ZIP İŞLEME] Çıkarma tamamlandı. Süre: {(extract_time - start_time).total_seconds()} saniye")
+                    
                     # Her bir resmi sınıflandır
+                    print(f"[ZIP İŞLEME] Görüntü sınıflandırma başlıyor...")
+                    processed_count = 0
+                    
                     for root, _, files in os.walk(temp_dir):
                         for file in files:
                             if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                                processed_count += 1
                                 image_path = os.path.join(root, file)
+                                print(f"[ZIP İŞLEME] İşleniyor: {file} ({processed_count}/{image_count})")
+                                
+                                start_file_time = datetime.datetime.now()
                                 result = classify_single_image(model, class_names, image_path)
+                                end_file_time = datetime.datetime.now()
+                                
+                                process_time = (end_file_time - start_file_time).total_seconds()
+                                print(f"[ZIP İŞLEME] Sınıflandırma sonucu: {result['predicted_class']} ({result['confidence']}%), süre: {process_time:.2f} saniye")
+                                
                                 result['filename'] = file
                                 results.append(result)
+                    
+                    total_time = datetime.datetime.now() - start_time
+                    print(f"[ZIP İŞLEME] Tüm işlem tamamlandı. Toplam süre: {total_time.total_seconds():.2f} saniye, işlenen dosya: {processed_count}")
                     
                     # Oturum değişkenine sonuçları kaydet (GET isteği ile indirme için)
                     request.session['zip_results'] = results

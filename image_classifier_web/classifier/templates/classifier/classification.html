@@ -312,6 +312,30 @@
                             
                             if (percentComplete === 100) {
                                 uploadStatus.textContent = 'Dosya yüklendi, analiz ediliyor...';
+                                
+                                // Dosya yüklendi, şimdi animasyon göster
+                                const processingAnimation = setInterval(function() {
+                                    let dots = uploadStatus.textContent.match(/\./g) || [];
+                                    if (dots.length >= 5) {
+                                        uploadStatus.textContent = 'Dosya yüklendi, analiz ediliyor';
+                                    } else {
+                                        uploadStatus.textContent += '.';
+                                    }
+                                    
+                                    // İlerleme çubuğunu animasyon haline getir
+                                    const currentWidth = parseInt(progressBar.style.width);
+                                    const newWidth = currentWidth + Math.floor(Math.random() * 3);
+                                    if (newWidth <= 95) { // İlerleme çubuğunu %95'e kadar götür
+                                        progressBar.style.width = newWidth + '%';
+                                        progressBar.setAttribute('aria-valuenow', newWidth);
+                                        uploadPercentage.textContent = 'İşleniyor...';
+                                    }
+                                }, 500);
+                                
+                                // İşlem tamamlandığında bu interval'ı temizlemek için yükleme tamamlandığında
+                                xhr.addEventListener('load', function() {
+                                    clearInterval(processingAnimation);
+                                });
                             }
                         }
                     });
