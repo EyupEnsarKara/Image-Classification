@@ -61,8 +61,6 @@ train_transforms = transforms.Compose([
     transforms.RandomRotation(degrees=15),
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
     transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0)),
-    transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 2.0)), # Gaussian Blur eklendi
-    transforms.RandomEqualize(p=0.5), # Rastgele
     pretrained_vit_transforms
 ])
 
