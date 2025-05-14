@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .models import UploadedImage, ModelFile
 import torch
 import torchvision
@@ -12,6 +12,7 @@ import tempfile
 import json
 import uuid
 import shutil
+import datetime
 
 def get_class_names():
     # yazlab-data/train klasörünü Django projesinin içinde ara
@@ -66,12 +67,24 @@ def classify_single_image(model, class_names, image_path):
         with torch.no_grad():
             output = model(processed_image)
             probabilities = torch.nn.functional.softmax(output[0], dim=0)
-            predicted_class = class_names[probabilities.argmax().item()]
-            confidence = probabilities.max().item() * 100
+            
+            # Tüm sınıfların tahminlerini diziye ekle
+            all_predictions = []
+            for i, prob in enumerate(probabilities):
+                all_predictions.append({
+                    "class": class_names[i],
+                    "confidence": round(prob.item() * 100, 2)
+                })
+            
+            # En yüksek olasılıklı sınıfı bul
+            max_index = probabilities.argmax().item()
+            predicted_class = class_names[max_index]
+            confidence = probabilities[max_index].item() * 100
             
         return {
             "predicted_class": predicted_class,
-            "confidence": round(confidence, 2)
+            "confidence": round(confidence, 2),
+            "all_predictions": sorted(all_predictions, key=lambda x: x["confidence"], reverse=True)
         }
     except Exception as e:
         return {"error": str(e)}
@@ -81,6 +94,7 @@ def image_classification(request):
     
     # JSON yanıtı isteniyor mu kontrol et
     want_json = request.GET.get('json', False) or request.POST.get('json', False)
+    download_json = request.GET.get('download', False) or request.POST.get('download', False)
     
     if request.method == 'POST':
         model_id = request.POST.get('model')
@@ -117,16 +131,27 @@ def image_classification(request):
                                 result = classify_single_image(model, class_names, image_path)
                                 result['filename'] = file
                                 results.append(result)
+                    
+                    json_data = {
+                        "zip_analysis": results,
+                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
                                 
                     if want_json:
-                        return JsonResponse({
-                            "zip_analysis": results
-                        })
+                        if download_json:
+                            response = HttpResponse(
+                                json.dumps(json_data, indent=4),
+                                content_type='application/json'
+                            )
+                            response['Content-Disposition'] = 'attachment; filename=zip_analysis_results.json'
+                            return response
+                        return JsonResponse(json_data)
                         
                     return render(request, 'classifier/classification.html', {
                         'zip_results': results,
                         'models': models,
-                        'selected_model': model_id
+                        'selected_model': model_id,
+                        'json_data': json.dumps(json_data, indent=4)
                     })
                 finally:
                     # Geçici dizini temizle
@@ -148,17 +173,30 @@ def image_classification(request):
                     image_instance.prediction = prediction_text
                     image_instance.save()
                     
+                    json_data = {
+                        "image_url": request.build_absolute_uri(image_instance.image.url),
+                        "prediction": result,
+                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    
                     if want_json:
-                        return JsonResponse({
-                            "image_url": request.build_absolute_uri(image_instance.image.url),
-                            "prediction": result
-                        })
+                        if download_json:
+                            response = HttpResponse(
+                                json.dumps(json_data, indent=4),
+                                content_type='application/json'
+                            )
+                            filename = f"image_analysis_{image_instance.image.name.split('/')[-1].split('.')[0]}.json"
+                            response['Content-Disposition'] = f'attachment; filename={filename}'
+                            return response
+                        return JsonResponse(json_data)
                     
                     return render(request, 'classifier/classification.html', {
                         'image_url': image_instance.image.url,
                         'prediction': prediction_text,
+                        'predictions_list': result['all_predictions'],
                         'models': models,
-                        'selected_model': model_id
+                        'selected_model': model_id,
+                        'json_data': json.dumps(json_data, indent=4)
                     })
                 else:
                     if want_json:
