@@ -69,36 +69,57 @@ def classify_single_image(model, class_names, image_path):
             # Softmax ile olasılık dağılımına dönüştür
             probabilities = torch.nn.functional.softmax(output[0], dim=0)
             
-            # İlk önce tüm olasılık değerlerini yüzde olarak hesapla
-            raw_percentages = [prob.item() * 100 for prob in probabilities]
+            # İlk önce tüm olasılık değerlerini yüzde olarak hesapla (daha yüksek hassasiyette)
+            raw_percentages = [float(prob.item() * 100) for prob in probabilities]
             
-            # Çok düşük değerleri kontrol et ve düzelt
+            # Toplam tam 100 olacak şekilde ölçeklendir
             total_percentage = sum(raw_percentages)
-            scaling_factor = 100.0 / total_percentage if abs(total_percentage - 100.0) > 0.01 else 1.0
+            scaling_factor = 100.0 / total_percentage
             
-            # Tüm sınıfların tahminlerini diziye ekle
-            all_predictions = []
-            for i, raw_percentage in enumerate(raw_percentages):
-                # Yüzdeyi ölçekle ve 2 basamağa yuvarla
-                adjusted_percentage = round(raw_percentage * scaling_factor, 2)
-                # Çok küçük değerler için alt sınır belirle
-                if 0 < adjusted_percentage < 0.01:
-                    adjusted_percentage = 0.01
+            # Ölçeklendirilmiş değerler (henüz yuvarlanmamış)
+            scaled_percentages = [p * scaling_factor for p in raw_percentages]
+            
+            # Önce tüm tahminleri sırala ve yuvarla
+            predictions_data = []
+            for i, scaled_value in enumerate(scaled_percentages):
+                # Çok küçük değerler için minimum değer belirle
+                if scaled_value > 0 and scaled_value < 0.01:
+                    rounded_value = 0.01
+                else:
+                    rounded_value = round(scaled_value, 2)
                 
-                all_predictions.append({
+                predictions_data.append({
                     "class": class_names[i],
-                    "confidence": adjusted_percentage
+                    "confidence": rounded_value,
+                    "raw_confidence": scaled_value  # sıralama için
                 })
             
-            # En yüksek olasılıklı sınıfı bul
-            max_index = probabilities.argmax().item()
-            predicted_class = class_names[max_index]
-            confidence = raw_percentages[max_index] * scaling_factor
+            # Tahminleri azalan sırada sırala
+            sorted_predictions = sorted(predictions_data, key=lambda x: x["raw_confidence"], reverse=True)
+            
+            # raw_confidence alanını kaldır
+            for pred in sorted_predictions:
+                del pred["raw_confidence"]
+            
+            # En yüksek tahmini al
+            top_prediction = sorted_predictions[0]
+            predicted_class = top_prediction["class"]
+            confidence = top_prediction["confidence"]
+            
+            # Toplam değeri kontrol et ve gerekirse düzelt
+            total_rounded = sum(pred["confidence"] for pred in sorted_predictions)
+            
+            # Toplam 100'den farklıysa, en yüksek değeri ayarlayarak düzelt
+            if abs(total_rounded - 100) > 0.01:
+                difference = 100 - total_rounded
+                sorted_predictions[0]["confidence"] = round(sorted_predictions[0]["confidence"] + difference, 2)
+                confidence = sorted_predictions[0]["confidence"]
             
         return {
             "predicted_class": predicted_class,
-            "confidence": round(confidence, 2),
-            "all_predictions": sorted(all_predictions, key=lambda x: x["confidence"], reverse=True)
+            "confidence": confidence,
+            "all_predictions": sorted_predictions,
+            "total_confidence": round(sum(pred["confidence"] for pred in sorted_predictions), 2)
         }
     except Exception as e:
         return {"error": str(e)}
