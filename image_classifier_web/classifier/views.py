@@ -66,20 +66,34 @@ def classify_single_image(model, class_names, image_path):
         
         with torch.no_grad():
             output = model(processed_image)
+            # Softmax ile olasılık dağılımına dönüştür
             probabilities = torch.nn.functional.softmax(output[0], dim=0)
+            
+            # İlk önce tüm olasılık değerlerini yüzde olarak hesapla
+            raw_percentages = [prob.item() * 100 for prob in probabilities]
+            
+            # Çok düşük değerleri kontrol et ve düzelt
+            total_percentage = sum(raw_percentages)
+            scaling_factor = 100.0 / total_percentage if abs(total_percentage - 100.0) > 0.01 else 1.0
             
             # Tüm sınıfların tahminlerini diziye ekle
             all_predictions = []
-            for i, prob in enumerate(probabilities):
+            for i, raw_percentage in enumerate(raw_percentages):
+                # Yüzdeyi ölçekle ve 2 basamağa yuvarla
+                adjusted_percentage = round(raw_percentage * scaling_factor, 2)
+                # Çok küçük değerler için alt sınır belirle
+                if 0 < adjusted_percentage < 0.01:
+                    adjusted_percentage = 0.01
+                
                 all_predictions.append({
                     "class": class_names[i],
-                    "confidence": round(prob.item() * 100, 2)
+                    "confidence": adjusted_percentage
                 })
             
             # En yüksek olasılıklı sınıfı bul
             max_index = probabilities.argmax().item()
             predicted_class = class_names[max_index]
-            confidence = probabilities[max_index].item() * 100
+            confidence = raw_percentages[max_index] * scaling_factor
             
         return {
             "predicted_class": predicted_class,
