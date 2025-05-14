@@ -5,7 +5,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .upload-container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 50px auto;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -20,6 +20,13 @@
             margin: 20px 0;
             border-radius: 5px;
         }
+        .zip-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .tab-content {
+            padding-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -31,25 +38,69 @@
                 <a href="{% url 'upload_model' %}" class="btn btn-success">Yeni Model Yükle</a>
             </div>
 
-            <form method="post" enctype="multipart/form-data" class="mb-4">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="model" class="form-label">Model Seçin</label>
-                    <select class="form-select" id="model" name="model" required>
-                        <option value="">Model seçin...</option>
-                        {% for model in models %}
-                        <option value="{{ model.id }}" {% if selected_model == model.id|stringformat:"s" %}selected{% endif %}>
-                            {{ model.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
+            <ul class="nav nav-tabs" id="uploadTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="image-tab" data-bs-toggle="tab" data-bs-target="#image-content" type="button" role="tab">Tek Görüntü</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="zip-tab" data-bs-toggle="tab" data-bs-target="#zip-content" type="button" role="tab">ZIP Dosyası</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="uploadTabsContent">
+                <div class="tab-pane fade show active" id="image-content" role="tabpanel">
+                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="model" class="form-label">Model Seçin</label>
+                            <select class="form-select" id="model" name="model" required>
+                                <option value="">Model seçin...</option>
+                                {% for model in models %}
+                                <option value="{{ model.id }}" {% if selected_model == model.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ model.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Görüntü Seçin</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="json-output" name="json">
+                            <label class="form-check-label" for="json-output">JSON çıktısı al</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Sınıflandır</button>
+                    </form>
                 </div>
-                <div class="mb-3">
-                    <label for="image" class="form-label">Görüntü Seçin</label>
-                    <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                
+                <div class="tab-pane fade" id="zip-content" role="tabpanel">
+                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="zip-model" class="form-label">Model Seçin</label>
+                            <select class="form-select" id="zip-model" name="model" required>
+                                <option value="">Model seçin...</option>
+                                {% for model in models %}
+                                <option value="{{ model.id }}" {% if selected_model == model.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ model.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="zip_file" class="form-label">ZIP Dosyası Seçin</label>
+                            <input type="file" class="form-control" id="zip_file" name="zip_file" accept=".zip" required>
+                            <div class="form-text">ZIP dosyanız içinde .jpg, .jpeg veya .png uzantılı görüntüler olmalıdır.</div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="zip-json-output" name="json">
+                            <label class="form-check-label" for="zip-json-output">JSON çıktısı al</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Sınıflandır</button>
+                    </form>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Sınıflandır</button>
-            </form>
+            </div>
 
             {% if error %}
             <div class="alert alert-danger">
@@ -66,7 +117,35 @@
                 </div>
             </div>
             {% endif %}
+            
+            {% if zip_results %}
+            <div class="result-container">
+                <h4 class="text-center mb-3">ZIP Dosyası Sonuçları</h4>
+                <div class="table-responsive zip-results">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Dosya</th>
+                                <th>Tahmin</th>
+                                <th>Güven Oranı</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in zip_results %}
+                            <tr>
+                                <td>{{ result.filename }}</td>
+                                <td>{{ result.predicted_class }}</td>
+                                <td>{{ result.confidence }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

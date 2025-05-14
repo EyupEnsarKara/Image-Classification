@@ -1,11 +1,17 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import UploadedImage, ModelFile
 import torch
 import torchvision
 from PIL import Image
 import os
+import zipfile
+import tempfile
+import json
+import uuid
+import shutil
 
 def get_class_names():
     # yazlab-data/train klasörünü Django projesinin içinde ara
@@ -53,49 +59,128 @@ def upload_model(request):
     
     return render(request, 'classifier/upload_model.html')
 
+def classify_single_image(model, class_names, image_path):
+    try:
+        processed_image = process_image(image_path)
+        
+        with torch.no_grad():
+            output = model(processed_image)
+            probabilities = torch.nn.functional.softmax(output[0], dim=0)
+            predicted_class = class_names[probabilities.argmax().item()]
+            confidence = probabilities.max().item() * 100
+            
+        return {
+            "predicted_class": predicted_class,
+            "confidence": round(confidence, 2)
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 def image_classification(request):
     models = ModelFile.objects.all()
     
-    if request.method == 'POST' and request.FILES.get('image'):
+    # JSON yanıtı isteniyor mu kontrol et
+    want_json = request.GET.get('json', False) or request.POST.get('json', False)
+    
+    if request.method == 'POST':
         model_id = request.POST.get('model')
+        
         if not model_id:
+            error_message = 'Lütfen bir model seçin'
+            if want_json:
+                return JsonResponse({"error": error_message}, status=400)
             return render(request, 'classifier/classification.html', {
-                'error': 'Lütfen bir model seçin',
+                'error': error_message,
                 'models': models
             })
             
         try:
             model_file = ModelFile.objects.get(id=model_id)
-            image_instance = UploadedImage(
-                image=request.FILES['image'],
-                model_used=model_file
-            )
-            image_instance.save()
-            
             model, class_names = load_model(model_file)
-            image_path = os.path.join(settings.MEDIA_ROOT, str(image_instance.image))
-            processed_image = process_image(image_path)
             
-            with torch.no_grad():
-                output = model(processed_image)
-                probabilities = torch.nn.functional.softmax(output[0], dim=0)
-                predicted_class = class_names[probabilities.argmax().item()]
-                confidence = probabilities.max().item() * 100
+            # Zip dosyası kontrolü
+            if request.FILES.get('zip_file'):
+                zip_file = request.FILES['zip_file']
+                temp_dir = tempfile.mkdtemp()
+                results = []
                 
-            image_instance.prediction = f"{predicted_class} ({confidence:.2f}%)"
-            image_instance.save()
+                try:
+                    # Zip dosyasını geçici dizine çıkar
+                    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                        zip_ref.extractall(temp_dir)
+                    
+                    # Her bir resmi sınıflandır
+                    for root, _, files in os.walk(temp_dir):
+                        for file in files:
+                            if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                                image_path = os.path.join(root, file)
+                                result = classify_single_image(model, class_names, image_path)
+                                result['filename'] = file
+                                results.append(result)
+                                
+                    if want_json:
+                        return JsonResponse({
+                            "zip_analysis": results
+                        })
+                        
+                    return render(request, 'classifier/classification.html', {
+                        'zip_results': results,
+                        'models': models,
+                        'selected_model': model_id
+                    })
+                finally:
+                    # Geçici dizini temizle
+                    shutil.rmtree(temp_dir, ignore_errors=True)
             
-            return render(request, 'classifier/classification.html', {
-                'image_url': image_instance.image.url,
-                'prediction': image_instance.prediction,
-                'models': models,
-                'selected_model': model_id
-            })
-            
+            # Tek resim işleme
+            elif request.FILES.get('image'):
+                image_instance = UploadedImage(
+                    image=request.FILES['image'],
+                    model_used=model_file
+                )
+                image_instance.save()
+                
+                image_path = os.path.join(settings.MEDIA_ROOT, str(image_instance.image))
+                result = classify_single_image(model, class_names, image_path)
+                
+                if "error" not in result:
+                    prediction_text = f"{result['predicted_class']} ({result['confidence']}%)"
+                    image_instance.prediction = prediction_text
+                    image_instance.save()
+                    
+                    if want_json:
+                        return JsonResponse({
+                            "image_url": request.build_absolute_uri(image_instance.image.url),
+                            "prediction": result
+                        })
+                    
+                    return render(request, 'classifier/classification.html', {
+                        'image_url': image_instance.image.url,
+                        'prediction': prediction_text,
+                        'models': models,
+                        'selected_model': model_id
+                    })
+                else:
+                    if want_json:
+                        return JsonResponse({"error": result["error"]}, status=500)
+            else:
+                error_message = 'Lütfen bir resim veya zip dosyası yükleyin'
+                if want_json:
+                    return JsonResponse({"error": error_message}, status=400)
+                return render(request, 'classifier/classification.html', {
+                    'error': error_message,
+                    'models': models
+                })
+                
         except Exception as e:
+            error_message = f"Sınıflandırma hatası: {str(e)}"
+            if want_json:
+                return JsonResponse({"error": error_message}, status=500)
             return render(request, 'classifier/classification.html', {
-                'error': f"Sınıflandırma hatası: {str(e)}",
+                'error': error_message,
                 'models': models
             })
     
+    if want_json:
+        return JsonResponse({"message": "POST isteği bekleniyor"})
     return render(request, 'classifier/classification.html', {'models': models})
