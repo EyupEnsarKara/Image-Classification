@@ -58,9 +58,15 @@ pretrained_vit_transforms = pretrained_vit_weights.transforms()
 # Veri artırma için ek dönüşümler
 train_transforms = transforms.Compose([
     transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.3),  # Dikey çevirme
     transforms.RandomRotation(degrees=15),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),  # Ton değişimi eklendi
     transforms.RandomResizedCrop(size=224, scale=(0.8, 1.0)),
+    transforms.RandomPerspective(distortion_scale=0.2, p=0.5),  # Perspektif değişimi
+    transforms.RandomGrayscale(p=0.1),  # Bazen gri tonlama
+    transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),  # Bulanıklaştırma
+    transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.3),  # Keskinleştirme
+    transforms.RandomErasing(p=0.1, scale=(0.02, 0.2)),  # Rastgele silme
     pretrained_vit_transforms
 ])
 
