@@ -1,7 +1,5 @@
 """
 Tahmin yapmak için yardımcı fonksiyonlar.
-
-Ana referans: https://www.learnpytorch.io/06_pytorch_transfer_learning/#6-make-predictions-on-images-from-the-test-set 
 """
 import torch
 import torchvision
@@ -24,7 +22,7 @@ def pred_and_plot_image(
     """Hedef görüntü üzerinde hedef model ile tahmin yapar.
 
     Args:
-        model (torch.nn.Module): Görüntü üzerinde tahmin yapacak eğitilmiş (veya eğitilmemiş) PyTorch modeli.
+        model (torch.nn.Module): Görüntü üzerinde tahmin yapacak eğitilmiş PyTorch modeli.
         class_names (List[str]): Tahminleri eşlemek için hedef sınıfların listesi.
         image_path (str): Tahmin yapılacak hedef görüntünün dosya yolu.
         image_size (Tuple[int, int], optional): Hedef görüntünün dönüştürüleceği boyut. Varsayılan (224, 224).
@@ -50,21 +48,21 @@ def pred_and_plot_image(
             ]
         )
 
-    ### Görüntü üzerinde tahmin yap ###
-
+    # Görüntü üzerinde tahmin yap
+    
     # Modelin hedef cihazda olduğundan emin ol
     model.to(device)
 
     # Model değerlendirme modunu ve çıkarım modunu aç
     model.eval()
     with torch.inference_mode():
-        # Görüntüyü dönüştür ve ekstra boyut ekle (model [batch_size, color_channels, height, width] formatında örnekler gerektirir)
+        # Görüntüyü dönüştür ve ekstra boyut ekle
         transformed_image = image_transform(img).unsqueeze(dim=0)
 
         # Ekstra boyutlu görüntü üzerinde tahmin yap ve hedef cihaza gönder
         target_image_pred = model(transformed_image.to(device))
 
-    # Logit'leri -> tahmin olasılıklarına dönüştür (çok sınıflı sınıflandırma için torch.softmax() kullan)
+    # Logit'leri -> tahmin olasılıklarına dönüştür
     target_image_pred_probs = torch.softmax(target_image_pred, dim=1)
 
     # Tahmin olasılıklarını -> tahmin etiketlerine dönüştür
