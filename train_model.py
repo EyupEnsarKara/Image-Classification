@@ -6,6 +6,7 @@ import os
 from torch import nn
 from torchvision import transforms
 from helper_functions import set_seeds
+from engine_functions import train_model as train_engine
 
 # --- Cell ---
 
@@ -123,8 +124,6 @@ train_dataloader_pretrained, test_dataloader_pretrained, class_names = create_da
 
 # --- Cell ---
 
-from going_modular.going_modular import engine
-
 # Create optimizer and loss function
 optimizer = torch.optim.Adam(params=pretrained_vit.parameters(), 
                              lr=1e-4)  # Learning rate'i düşürdük
@@ -140,7 +139,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 
 # Train the classifier head of the pretrained ViT feature extractor model
 set_seeds()
-pretrained_vit_results = engine.train(model=pretrained_vit,
+pretrained_vit_results = train_engine(model=pretrained_vit,
                                       train_dataloader=train_dataloader_pretrained,
                                       test_dataloader=test_dataloader_pretrained,
                                       optimizer=optimizer,

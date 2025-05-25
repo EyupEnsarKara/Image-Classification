@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from going_modular.going_modular.predictions import pred_and_plot_image
+from prediction_functions import pred_and_plot_image
 import os
 from PIL import Image
 import torchvision.transforms as transforms
