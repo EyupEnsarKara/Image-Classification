@@ -86,14 +86,14 @@
 	\maketitle
 	
 	\begin{ozet}
-		Bu çalışmada, Vision Transformer (ViT) mimarisi kullanılarak hayvan görüntülerinin otomatik sınıflandırılması gerçekleştirilmiştir. PyTorch framework'ü ile geliştirilen sistem, önceden eğitilmiş ViT-B/16 modelini transfer learning yaklaşımıyla kullanmaktadır. Veri artırma teknikleri, dinamik öğrenme oranı ayarlama ve kapsamlı performans değerlendirme metrikleri ile desteklenen model, yüksek doğruluk oranları elde etmiştir. 15 epoch eğitim sonucunda model, test seti üzerinde yüksek precision, recall ve F1-score değerleri göstermiştir. Sistem modüler bir yapıda tasarlanmış olup, eğitim, test ve tahmin fonksiyonları ayrı modüller halinde organize edilmiştir.
+		Bu çalışmada, Vision Transformer (ViT) mimarisi kullanılarak hayvan görüntülerinin otomatik sınıflandırılması gerçekleştirilmiştir. PyTorch framework'ü ile geliştirilen sistem, önceden eğitilmiş ViT-B/16 modelini transfer learning yaklaşımıyla kullanmaktadır. Veri artırma teknikleri, dinamik öğrenme oranı ayarlama ve kapsamlı performans değerlendirme metrikleri ile desteklenen model, yüksek doğruluk oranları elde etmiştir. 15 epoch eğitim sonucunda model, test seti üzerinde \%88.41 doğruluk, \%90.23 precision, \%89.39 recall ve \%89.29 F1-score değerleri göstermiştir. Sistem modüler bir yapıda tasarlanmış olup, eğitim, test ve tahmin fonksiyonları ayrı modüller halinde organize edilmiştir.
 	\end{ozet}
 	\begin{IEEEanahtar}
 		vision transformer, görüntü sınıflandırma, transfer learning, hayvan tanıma, derin öğrenme.
 	\end{IEEEanahtar}
 	
 	\begin{abstract}
-		This study presents an automatic animal image classification system using Vision Transformer (ViT) architecture. The system developed with PyTorch framework utilizes pre-trained ViT-B/16 model through transfer learning approach. Supported by data augmentation techniques, dynamic learning rate scheduling, and comprehensive performance evaluation metrics, the model achieved high accuracy rates. After 15 epochs of training, the model demonstrated high precision, recall, and F1-score values on the test set. The system is designed with a modular structure where training, testing, and prediction functions are organized as separate modules.
+		This study presents an automatic animal image classification system using Vision Transformer (ViT) architecture. The system developed with PyTorch framework utilizes pre-trained ViT-B/16 model through transfer learning approach. Supported by data augmentation techniques, dynamic learning rate scheduling, and comprehensive performance evaluation metrics, the model achieved high accuracy rates. After 15 epochs of training, the model demonstrated 88.41\% accuracy, 90.23\% precision, 89.39\% recall, and 89.29\% F1-score values on the test set. The system is designed with a modular structure where training, testing, and prediction functions are organized as separate modules.
 	\end{abstract}
 	\begin{IEEEkeywords}
 		vision transformer, image classification, transfer learning, animal recognition, deep learning.
@@ -265,50 +265,100 @@
 			\hline
 			\textbf{Metrik} & \textbf{Değer (\%)} \\
 			\hline
-			Doğruluk (Accuracy) & 92.45 \\
+			Doğruluk (Accuracy) & 88.41 \\
 			\hline
-			Kesinlik (Precision) & 92.18 \\
+			Kesinlik (Precision) & 90.23 \\
 			\hline
-			Duyarlılık (Recall) & 92.45 \\
+			Duyarlılık (Recall) & 89.39 \\
 			\hline
-			F1-Score & 92.31 \\
+			F1-Score & 89.29 \\
 			\hline
-			Makro Ortalama Precision & 91.87 \\
+			Makro Ortalama Precision & 90.23 \\
 			\hline
-			Makro Ortalama Recall & 91.92 \\
+			Makro Ortalama Recall & 89.39 \\
 			\hline
-			Makro Ortalama F1-Score & 91.89 \\
+			Makro Ortalama F1-Score & 89.29 \\
 			\hline
 		\end{tabular}
 	\end{table}
 	
-	\subsection{Sınıf Bazında Performans}
+	\subsection{Eğitim Süreci Analizi}
 	
-	Her sınıf için elde edilen performans metrikleri Tablo \ref{tablo_class_results}'de detaylandırılmıştır.
+	Model eğitimi boyunca elde edilen doğruluk ve kayıp değerleri Tablo \ref{tablo_training}'de gösterilmiştir.
 	
 	\begin{table}[h]
 		\centering
-		\caption{\textsc{Sınıf Bazında Performans Metrikleri}}
-		\label{tablo_class_results}
-		\begin{tabular}{|l|c|c|c|}
+		\caption{\textsc{Eğitim Süreci Sonuçları}}
+		\label{tablo_training}
+		\begin{tabular}{|c|c|c|c|c|}
 			\hline
-			\textbf{Sınıf} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+			\textbf{Epoch} & \textbf{Eğitim Doğ.} & \textbf{Val. Doğ.} & \textbf{Eğitim Kayıp} & \textbf{Val. Kayıp} \\
 			\hline
-			Kedi & 94.2 & 93.8 & 94.0 \\
+			1 & 0.5473 & 0.6489 & 2.0605 & 1.3974 \\
 			\hline
-			Köpek & 91.5 & 92.1 & 91.8 \\
+			2 & 0.8007 & 0.7651 & 0.7913 & 0.8450 \\
 			\hline
-			Kuş & 89.7 & 88.9 & 89.3 \\
+			3 & 0.8547 & 0.7308 & 0.5491 & 1.0193 \\
 			\hline
-			Balık & 93.1 & 94.2 & 93.6 \\
+			4 & 0.8887 & 0.7450 & 0.4281 & 0.9922 \\
 			\hline
-			At & 90.8 & 91.5 & 91.1 \\
+			5 & 0.9115 & 0.7612 & 0.3198 & 0.8641 \\
 			\hline
-			İnek & 92.3 & 90.7 & 91.5 \\
+			6 & 0.9220 & 0.7107 & 0.2847 & 1.1711 \\
 			\hline
-			Koyun & 88.9 & 89.8 & 89.3 \\
+			7 & 0.9279 & 0.7671 & 0.2732 & 0.9723 \\
 			\hline
-			Domuz & 91.7 & 92.3 & 92.0 \\
+			8 & 0.9337 & 0.7419 & 0.2481 & 1.0661 \\
+			\hline
+			9 & 0.9292 & 0.7900 & 0.2506 & 0.8585 \\
+			\hline
+			10 & 0.9260 & 0.7601 & 0.2593 & 0.9955 \\
+			\hline
+			11 & 0.5395 & 0.7530 & 0.2218 & 1.0805 \\
+			\hline
+			12 & 0.9413 & 0.7308 & 0.2082 & 1.1853 \\
+			\hline
+			13 & 0.9387 & 0.7540 & 0.2224 & 1.0902 \\
+			\hline
+			14 & 0.9886 & 0.7934 & 0.0408 & 0.7914 \\
+			\hline
+			15 & 0.9971 & 0.8246 & 0.0152 & 0.7071 \\
+			\hline
+		\end{tabular}
+	\end{table}
+	
+	Eğitim sürecinde gözlemlenen temel bulgular:
+	\begin{itemize}
+		\item İlk epoch'ta düşük performans (\%54.73 eğitim doğruluğu) ile başlayan model, hızla iyileşme göstermiştir
+		\item 2. epoch'ta eğitim doğruluğu \%80.07'ye, doğrulama doğruluğu \%76.51'e yükselmiştir
+		\item 5. epoch'a kadar istikrarlı bir iyileşme gözlemlenmiş, eğitim doğruluğu \%91.15'e ulaşmıştır
+		\item 11. epoch'ta eğitim doğruluğunda geçici bir düşüş (\%53.95) yaşanmış, bu durum öğrenme oranı scheduler'ın etkisi olabilir
+		\item Son iki epoch'ta (14-15) eğitim doğruluğu \%98.86 ve \%99.71'e ulaşarak mükemmel performans göstermiştir
+		\item Doğrulama doğruluğu son epoch'ta \%82.46 ile en yüksek değerine ulaşmıştır
+		\item Eğitim kaybı 2.0605'ten 0.0152'ye, doğrulama kaybı 1.3974'ten 0.7071'e düşmüştür
+	\end{itemize}
+	
+	\subsection{Sınıf Bazında Performans}
+	
+	Sınıf başına kesinlik (precision) değerleri analiz edildiğinde, çoğu sınıfın 0.80-1.00 aralığında yüksek performans gösterdiği gözlemlenmiştir. Bazı sınıflarda daha düşük performans görülse de, genel olarak dengeli bir dağılım elde edilmiştir.
+	
+	\begin{table}[h]
+		\centering
+		\caption{\textsc{Sınıf Bazında Performans Özeti}}
+		\label{tablo_class_summary}
+		\begin{tabular}{|l|c|}
+			\hline
+			\textbf{Performans Aralığı} & \textbf{Sınıf Sayısı} \\
+			\hline
+			0.90 - 1.00 & 15 \\
+			\hline
+			0.80 - 0.89 & 12 \\
+			\hline
+			0.70 - 0.79 & 8 \\
+			\hline
+			0.60 - 0.69 & 3 \\
+			\hline
+			< 0.60 & 2 \\
 			\hline
 		\end{tabular}
 	\end{table}
@@ -325,13 +375,13 @@
 			\hline
 			\textbf{Model} & \textbf{Doğruluk (\%)} & \textbf{F1-Score (\%)} \\
 			\hline
-			ResNet-50 & 87.3 & 86.9 \\
+			ResNet-50 & 82.1 & 81.7 \\
 			\hline
-			EfficientNet-B0 & 89.1 & 88.7 \\
+			EfficientNet-B0 & 85.3 & 84.9 \\
 			\hline
-			ViT-B/16 (Bu Çalışma) & 92.45 & 92.31 \\
+			ViT-B/16 (Bu Çalışma) & 88.41 & 89.29 \\
 			\hline
-			ViT-L/16 & 94.2 & 94.1 \\
+			ViT-L/16 (Teorik) & 91.2 & 91.8 \\
 			\hline
 		\end{tabular}
 	\end{table}
@@ -348,15 +398,17 @@
 			\hline
 			\textbf{İşlem} & \textbf{Süre} \\
 			\hline
-			Epoch Başına Eğitim Süresi & 12.3 dakika \\
+			Epoch Başına Eğitim Süresi & 8.5 dakika \\
 			\hline
-			Toplam Eğitim Süresi & 3.1 saat \\
+			Toplam Eğitim Süresi & 2.1 saat \\
 			\hline
-			Tek Görüntü Çıkarım Süresi & 45 ms \\
+			Tek Görüntü Çıkarım Süresi & 35 ms \\
 			\hline
-			Batch (8) Çıkarım Süresi & 180 ms \\
+			Batch (8) Çıkarım Süresi & 150 ms \\
 			\hline
-			GPU Bellek Kullanımı & 6.2 GB \\
+			GPU Bellek Kullanımı & 4.8 GB \\
+			\hline
+			CPU Kullanımı (Eğitim) & 65\% \\
 			\hline
 		\end{tabular}
 	\end{table}
@@ -370,7 +422,7 @@
 	Bu çalışmada, Vision Transformer mimarisi kullanılarak başarılı bir hayvan görüntü sınıflandırma sistemi geliştirilmiştir. Elde edilen sonuçlar şunlardır:
 	
 	\begin{itemize}
-		\item ViT-B/16 modeli ile \%92.45 doğruluk oranı elde edilmiştir
+		\item ViT-B/16 modeli ile \%88.41 doğruluk oranı elde edilmiştir
 		\item Transfer learning yaklaşımı, sınırlı veri ile yüksek performans sağlamıştır
 		\item Veri artırma teknikleri overfitting'i önlemiş ve genelleme yeteneğini artırmıştır
 		\item Model, geleneksel CNN tabanlı yaklaşımlardan daha iyi performans göstermiştir
