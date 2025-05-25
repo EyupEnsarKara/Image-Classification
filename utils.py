@@ -190,5 +190,4 @@ def set_seeds(seed: int=42):
     # Set the seed for general torch operations
     torch.manual_seed(seed)
     # Set the seed for CUDA torch operations (ones that happen on the GPU)
-    torch.cuda.manual_seed(seed)
-
+    torch.cuda.manual_seed(seed) 

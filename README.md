@@ -10,7 +10,7 @@ Bu proje, PyTorch ve Vision Transformer (ViT) kullanarak hayvan görüntülerini
 - **`test_model.py`**: Eğitilmiş modeli test etmek için script
 - **`engine_functions.py`**: Model eğitimi ve test fonksiyonları
 - **`prediction_functions.py`**: Tahmin yapma fonksiyonları
-- **`helper_functions.py`**: Yardımcı fonksiyonlar (görselleştirme, seed ayarlama vb.)
+- **`utils.py`**: Yardımcı fonksiyonlar (görselleştirme, seed ayarlama vb.)
 
 ### Fonksiyon Modülleri
 
@@ -22,7 +22,7 @@ Bu proje, PyTorch ve Vision Transformer (ViT) kullanarak hayvan görüntülerini
 #### `prediction_functions.py`
 - `pred_and_plot_image()`: Tek görüntü üzerinde tahmin yapma ve görselleştirme
 
-#### `helper_functions.py`
+#### `utils.py`
 - `plot_loss_curves()`: Eğitim eğrilerini çizme
 - `set_seeds()`: Rastgele seed ayarlama
 - `accuracy_fn()`: Doğruluk hesaplama

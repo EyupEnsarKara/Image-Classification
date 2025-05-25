@@ -5,7 +5,7 @@ import os
 
 from torch import nn
 from torchvision import transforms
-from helper_functions import set_seeds
+from utils import set_seeds
 from engine_functions import train_model as train_engine
 
 # --- Cell ---
@@ -151,7 +151,7 @@ pretrained_vit_results = train_engine(model=pretrained_vit,
 # --- Cell ---
 
 # Plot the loss curves
-from helper_functions import plot_loss_curves
+from utils import plot_loss_curves
 
 plot_loss_curves(pretrained_vit_results)
 
