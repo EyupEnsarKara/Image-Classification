@@ -858,18 +858,6 @@ class SimpleModelTestGUI:
         # Buton ve durum çubuğunu güncelle
         self.predict_btn.configure(state='normal', text="🔮 Tahmin Yap")
         self.status_label.configure(text=f"✅ Analiz tamamlandı: {predicted_class} (%{confidence_score*100:.1f})")
-        
-        # Başarı mesajı
-        top_3 = [(self.class_names[i], prob.item()) for i, prob in enumerate(probabilities[0])]
-        top_3.sort(key=lambda x: x[1], reverse=True)
-        top_3 = top_3[:3]
-        
-        message = f"🎯 En Yüksek Tahmin: {predicted_class.upper()}\n📊 Güven Skoru: %{confidence_score*100:.2f}\n\n"
-        message += "🏆 İlk 3 Tahmin:\n"
-        for i, (animal, prob) in enumerate(top_3, 1):
-            message += f"{i}. {animal.title()}: %{prob*100:.2f}\n"
-        
-        messagebox.showinfo("Detaylı Analiz Tamamlandı", message)
     
     def _handle_prediction_error(self, error_message):
         """Tahmin hatalarını işler"""
