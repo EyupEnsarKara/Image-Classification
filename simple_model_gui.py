@@ -11,9 +11,6 @@ import os
 import numpy as np
 from torchvision import transforms
 import threading
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTk
-from matplotlib.figure import Figure
 
 class SimpleModelTestGUI:
     def __init__(self):
@@ -319,18 +316,11 @@ class SimpleModelTestGUI:
         self.all_frame = tk.Frame(self.notebook, bg=self.colors['card'])
         self.notebook.add(self.all_frame, text="📋 Tüm Sonuçlar")
         
-        # Sekme 3: Grafik
-        self.chart_frame = tk.Frame(self.notebook, bg=self.colors['card'])
-        self.notebook.add(self.chart_frame, text="📈 Grafik")
-        
         # En yüksek 10 tahmin listesi
         self.create_top_predictions_list()
         
         # Tüm sonuçlar listesi
         self.create_all_predictions_list()
-        
-        # Grafik alanı
-        self.create_chart_area()
         
     def create_top_predictions_list(self):
         """En yüksek 10 tahmin listesini oluşturur"""
@@ -402,7 +392,7 @@ class SimpleModelTestGUI:
         search_entry.pack(side='left', padx=(10, 0), fill='x', expand=True)
         
         # Treeview
-        columns = ('Hayvan', 'Olasılık', 'Yüzde', 'Kategori')
+        columns = ('Hayvan', 'Olasılık', 'Yüzde')
         self.all_tree = ttk.Treeview(
             self.all_frame, 
             columns=columns, 
@@ -414,13 +404,11 @@ class SimpleModelTestGUI:
         self.all_tree.heading('Hayvan', text='🐾 Hayvan')
         self.all_tree.heading('Olasılık', text='📊 Olasılık')
         self.all_tree.heading('Yüzde', text='📈 Yüzde')
-        self.all_tree.heading('Kategori', text='🏷️ Kategori')
         
         # Sütun genişlikleri
-        self.all_tree.column('Hayvan', width=120, anchor='w')
-        self.all_tree.column('Olasılık', width=80, anchor='center')
-        self.all_tree.column('Yüzde', width=80, anchor='center')
-        self.all_tree.column('Kategori', width=100, anchor='w')
+        self.all_tree.column('Hayvan', width=150, anchor='w')
+        self.all_tree.column('Olasılık', width=100, anchor='center')
+        self.all_tree.column('Yüzde', width=100, anchor='center')
         
         # Scrollbar
         all_scrollbar = ttk.Scrollbar(self.all_frame, orient='vertical', command=self.all_tree.yview)
@@ -430,48 +418,6 @@ class SimpleModelTestGUI:
         self.all_tree.pack(side='left', fill='both', expand=True, padx=(20, 0), pady=10)
         all_scrollbar.pack(side='right', fill='y', padx=(0, 20), pady=10)
         
-    def create_chart_area(self):
-        """Grafik alanını oluşturur"""
-        
-        # Matplotlib figürü
-        self.fig = Figure(figsize=(8, 6), dpi=100, facecolor='#3c3c3c')
-        self.ax = self.fig.add_subplot(111, facecolor='#3c3c3c')
-        
-        # Canvas
-        self.canvas = FigureCanvasTk(self.fig, self.chart_frame)
-        self.canvas.get_tk_widget().pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # İlk grafik
-        self.ax.text(0.5, 0.5, 'Henüz tahmin yapılmadı\n\nBir görüntü seçin ve tahmin yapın', 
-                    ha='center', va='center', transform=self.ax.transAxes,
-                    fontsize=12, color='white')
-        self.ax.set_facecolor('#3c3c3c')
-        self.canvas.draw()
-        
-    def get_animal_category(self, animal_name):
-        """Hayvan kategorisini döndürür"""
-        mammals = ['antelope', 'badger', 'bat', 'bear', 'bison', 'boar', 'cat', 'chimpanzee', 'cow', 'coyote', 'deer', 'dog', 'dolphin', 'donkey', 'elephant', 'fox', 'goat', 'gorilla', 'hamster', 'hare', 'hedgehog', 'hippopotamus', 'horse', 'hyena', 'kangaroo', 'koala', 'leopard', 'lion', 'mouse', 'okapi', 'orangutan', 'otter', 'ox', 'panda', 'pig', 'porcupine', 'possum', 'raccoon', 'rat', 'reindeer', 'rhinoceros', 'seal', 'sheep', 'squirrel', 'tiger', 'whale', 'wolf', 'wombat', 'zebra']
-        birds = ['crow', 'duck', 'eagle', 'flamingo', 'goose', 'hornbill', 'hummingbird', 'owl', 'parrot', 'pelecaniformes', 'penguin', 'pigeon', 'sandpiper', 'sparrow', 'swan', 'turkey', 'woodpecker']
-        insects = ['bee', 'beetle', 'butterfly', 'caterpillar', 'cockroach', 'dragonfly', 'fly', 'grasshopper', 'ladybugs', 'mosquito', 'moth']
-        sea_creatures = ['goldfish', 'jellyfish', 'lobster', 'octopus', 'oyster', 'seahorse', 'shark', 'squid', 'starfish']
-        reptiles = ['lizard', 'snake', 'turtle']
-        amphibians = ['crab']
-        
-        if animal_name in mammals:
-            return '🐾 Memeli'
-        elif animal_name in birds:
-            return '🐦 Kuş'
-        elif animal_name in insects:
-            return '🐛 Böcek'
-        elif animal_name in sea_creatures:
-            return '🐠 Deniz'
-        elif animal_name in reptiles:
-            return '🐢 Sürüngen'
-        elif animal_name in amphibians:
-            return '🐸 Amfibi'
-        else:
-            return '❓ Diğer'
-    
     def create_status_bar(self):
         """Alt durum çubuğunu oluşturur"""
         status_frame = tk.Frame(self.root, bg=self.colors['accent'], height=30)
@@ -501,15 +447,13 @@ class SimpleModelTestGUI:
         # Filtrelenmiş sonuçları ekle
         for i, (class_name, probability) in enumerate(self.last_predictions):
             if search_term in class_name.lower():
-                category = self.get_animal_category(class_name)
                 percentage = f"%{probability*100:.2f}"
                 prob_str = f"{probability:.4f}"
                 
                 self.all_tree.insert('', 'end', values=(
                     class_name.title(), 
                     prob_str, 
-                    percentage, 
-                    category
+                    percentage
                 ))
     
     def update_predictions_display(self, probabilities):
@@ -528,9 +472,6 @@ class SimpleModelTestGUI:
         
         # Tüm sonuçlar listesini güncelle
         self.update_all_predictions(sorted_predictions)
-        
-        # Grafik güncelle
-        self.update_chart(sorted_predictions[:15])  # En yüksek 15'i göster
     
     def update_top_predictions(self, top_predictions):
         """En yüksek tahminler listesini günceller"""
@@ -576,64 +517,14 @@ class SimpleModelTestGUI:
         
         # Yeni öğeleri ekle
         for class_name, probability in all_predictions:
-            category = self.get_animal_category(class_name)
             percentage = f"%{probability*100:.2f}"
             prob_str = f"{probability:.4f}"
             
             self.all_tree.insert('', 'end', values=(
                 class_name.title(), 
                 prob_str, 
-                percentage, 
-                category
+                percentage
             ))
-    
-    def update_chart(self, top_predictions):
-        """Grafik günceller"""
-        
-        # Grafik temizle
-        self.ax.clear()
-        
-        # Veri hazırla
-        animals = [pred[0].title() for pred in top_predictions]
-        probabilities = [pred[1] * 100 for pred in top_predictions]
-        
-        # Renk paleti
-        colors = plt.cm.Set3(np.linspace(0, 1, len(animals)))
-        
-        # Yatay bar grafik
-        bars = self.ax.barh(range(len(animals)), probabilities, color=colors)
-        
-        # Grafik ayarları
-        self.ax.set_yticks(range(len(animals)))
-        self.ax.set_yticklabels(animals, fontsize=9, color='white')
-        self.ax.set_xlabel('Olasılık (%)', fontsize=10, color='white')
-        self.ax.set_title('En Yüksek 15 Tahmin', fontsize=12, color='white', pad=20)
-        
-        # Arka plan rengi
-        self.ax.set_facecolor('#3c3c3c')
-        self.fig.patch.set_facecolor('#3c3c3c')
-        
-        # Grid
-        self.ax.grid(True, alpha=0.3, color='white')
-        
-        # X ekseni rengi
-        self.ax.tick_params(axis='x', colors='white')
-        self.ax.spines['bottom'].set_color('white')
-        self.ax.spines['top'].set_color('white')
-        self.ax.spines['right'].set_color('white')
-        self.ax.spines['left'].set_color('white')
-        
-        # Değerleri bar üzerinde göster
-        for i, (bar, prob) in enumerate(zip(bars, probabilities)):
-            if prob > 1:  # Sadece %1'den büyük olanları göster
-                self.ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height()/2, 
-                           f'{prob:.1f}%', va='center', fontsize=8, color='white')
-        
-        # Layout ayarla
-        self.fig.tight_layout()
-        
-        # Grafik güncelle
-        self.canvas.draw()
     
     def load_model(self):
         """Eğitilmiş modeli yükler"""
