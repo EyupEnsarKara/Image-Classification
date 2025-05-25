@@ -11,6 +11,8 @@ import os
 import numpy as np
 from torchvision import transforms
 import threading
+import zipfile
+import io
 
 class SimpleModelTestGUI:
     def __init__(self):
@@ -36,6 +38,15 @@ class SimpleModelTestGUI:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.current_image_path = None
         self.last_predictions = None  # Son tahmin sonuçları
+        
+        # ZIP dosyası desteği
+        self.current_zip_file = None
+        self.zip_images = []  # ZIP içindeki görüntü listesi
+        self.current_zip_image = None  # Seçili ZIP görüntüsü
+        
+        # Toplu test desteği
+        self.batch_results = {}  # Toplu test sonuçları
+        self.is_batch_testing = False
         
         # Stil ayarları
         self.setup_styles()
@@ -207,6 +218,19 @@ class SimpleModelTestGUI:
         )
         self.select_image_btn.pack(fill='x', pady=(0, 10))
         
+        self.select_zip_btn = tk.Button(
+            button_frame,
+            text="📦 ZIP Dosyası Seç",
+            command=self.select_zip_file,
+            bg=self.colors['warning'],
+            fg='white',
+            font=('Segoe UI', 11, 'bold'),
+            relief='flat',
+            cursor='hand2',
+            height=2
+        )
+        self.select_zip_btn.pack(fill='x', pady=(0, 10))
+        
         self.predict_btn = tk.Button(
             button_frame,
             text="🔮 Tahmin Yap",
@@ -263,6 +287,56 @@ class SimpleModelTestGUI:
             length=250
         )
         self.progress_bar.pack(pady=15)
+        
+        # ZIP görüntü listesi
+        zip_frame = tk.Frame(parent, bg=self.colors['card'])
+        zip_frame.pack(fill='x', padx=20, pady=(10, 0))
+        
+        self.zip_label = tk.Label(
+            zip_frame,
+            text="📦 ZIP Dosyası Seçilmedi",
+            bg=self.colors['card'],
+            fg=self.colors['fg'],
+            font=('Segoe UI', 12, 'bold')
+        )
+        self.zip_label.pack(pady=(10, 5))
+        
+        # Listbox ve scrollbar (başlangıçta gizli)
+        listbox_frame = tk.Frame(zip_frame, bg=self.colors['card'])
+        
+        self.zip_listbox = tk.Listbox(
+            listbox_frame,
+            bg='white',
+            fg='black',
+            font=('Segoe UI', 9),
+            height=6,
+            selectmode='single'
+        )
+        self.zip_listbox.bind('<<ListboxSelect>>', self.on_zip_image_select)
+        
+        zip_scrollbar = ttk.Scrollbar(listbox_frame, orient='vertical', command=self.zip_listbox.yview)
+        self.zip_listbox.configure(yscrollcommand=zip_scrollbar.set)
+        
+        self.zip_listbox.pack(side='left', fill='both', expand=True)
+        zip_scrollbar.pack(side='right', fill='y')
+        
+        # Toplu test butonu (başlangıçta gizli)
+        self.batch_test_btn = tk.Button(
+            zip_frame,
+            text="🚀 Tüm Görüntüleri Test Et",
+            command=self.batch_test_images,
+            bg=self.colors['success'],
+            fg='white',
+            font=('Segoe UI', 10, 'bold'),
+            relief='flat',
+            cursor='hand2',
+            height=1,
+            state='disabled'
+        )
+        
+        # Başlangıçta listbox ve butonu gizle
+        self.listbox_frame = listbox_frame
+        self.zip_frame = zip_frame
         
     def create_image_panel(self, parent):
         """Görüntü panelini oluşturur"""
@@ -655,6 +729,7 @@ class SimpleModelTestGUI:
         
         if file_path:
             self.current_image_path = file_path
+            self.current_zip_image = None  # ZIP seçimini sıfırla
             self.display_image(file_path)
             self.predict_btn.configure(state='normal')
             self.status_label.configure(text="✅ Görüntü seçildi - Tahmin yapabilirsiniz")
@@ -663,6 +738,98 @@ class SimpleModelTestGUI:
             self.top_prediction_label.configure(text="Henüz tahmin yapılmadı")
             self.confidence_label.configure(text="Güven: -")
             self.progress_var.set(0)
+    
+    def select_zip_file(self):
+        """ZIP dosyası seçme dialog'unu açar"""
+        file_types = [
+            ("ZIP dosyaları", "*.zip"),
+            ("Tüm dosyalar", "*.*")
+        ]
+        
+        file_path = filedialog.askopenfilename(
+            title="Görüntü içeren ZIP dosyası seçin",
+            filetypes=file_types
+        )
+        
+        if file_path:
+            try:
+                self.load_zip_images(file_path)
+                self.status_label.configure(text="✅ ZIP dosyası yüklendi - Bir görüntü seçin")
+            except Exception as e:
+                messagebox.showerror("Hata", f"ZIP dosyası yüklenirken hata oluştu:\n{str(e)}")
+    
+    def load_zip_images(self, zip_path):
+        """ZIP dosyasındaki görüntüleri yükler"""
+        self.current_zip_file = zip_path
+        self.zip_images = []
+        
+        # Desteklenen görüntü formatları
+        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}
+        
+        with zipfile.ZipFile(zip_path, 'r') as zip_file:
+            for file_info in zip_file.filelist:
+                if not file_info.is_dir():
+                    file_ext = os.path.splitext(file_info.filename)[1].lower()
+                    if file_ext in image_extensions:
+                        self.zip_images.append(file_info.filename)
+        
+        # Listbox'ı güncelle
+        self.zip_listbox.delete(0, tk.END)
+        for image_name in self.zip_images:
+            # Sadece dosya adını göster (klasör yolunu kırp)
+            display_name = os.path.basename(image_name)
+            self.zip_listbox.insert(tk.END, display_name)
+        
+        # ZIP frame'ini göster
+        if self.zip_images:
+            # Listbox ve butonu göster
+            self.listbox_frame.pack(fill='x', padx=10, pady=(0, 10))
+            self.batch_test_btn.pack(pady=(0, 10), padx=10, fill='x')
+            
+            self.zip_label.configure(text=f"📦 ZIP Görüntüleri ({len(self.zip_images)} adet)")
+            self.batch_test_btn.configure(state='normal')
+        else:
+            messagebox.showwarning("Uyarı", "ZIP dosyasında görüntü bulunamadı!")
+    
+    def on_zip_image_select(self, event):
+        """ZIP listesinden görüntü seçildiğinde çalışır"""
+        selection = self.zip_listbox.curselection()
+        if selection:
+            index = selection[0]
+            self.current_zip_image = self.zip_images[index]
+            self.current_image_path = None  # Normal dosya seçimini sıfırla
+            
+            try:
+                self.display_zip_image(self.current_zip_image)
+                self.predict_btn.configure(state='normal')
+                image_name = os.path.basename(self.current_zip_image)
+                self.status_label.configure(text=f"✅ ZIP görüntüsü seçildi: {image_name}")
+                
+                # Sonuçları sıfırla
+                self.top_prediction_label.configure(text="Henüz tahmin yapılmadı")
+                self.confidence_label.configure(text="Güven: -")
+                self.progress_var.set(0)
+                
+            except Exception as e:
+                messagebox.showerror("Hata", f"ZIP görüntüsü yüklenirken hata oluştu:\n{str(e)}")
+    
+    def display_zip_image(self, image_path_in_zip):
+        """ZIP içindeki görüntüyü gösterir"""
+        with zipfile.ZipFile(self.current_zip_file, 'r') as zip_file:
+            with zip_file.open(image_path_in_zip) as image_file:
+                image_data = image_file.read()
+                image = Image.open(io.BytesIO(image_data))
+                
+                # Görüntü boyutunu hesapla (en fazla 400x400)
+                max_size = 400
+                image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                
+                # Tkinter için dönüştür
+                photo = ImageTk.PhotoImage(image)
+                
+                # Görüntüyü göster
+                self.image_label.configure(image=photo, text="")
+                self.image_label.image = photo  # Referansı koru
     
     def display_image(self, image_path):
         """Seçilen görüntüyü arayüzde gösterir"""
@@ -686,7 +853,7 @@ class SimpleModelTestGUI:
     
     def predict_image(self):
         """Seçilen görüntü üzerinde tahmin yapar"""
-        if not self.current_image_path or not self.model:
+        if (not self.current_image_path and not self.current_zip_image) or not self.model:
             messagebox.showwarning("Uyarı", "Lütfen önce bir görüntü seçin ve modelin yüklendiğinden emin olun!")
             return
         
@@ -712,8 +879,18 @@ class SimpleModelTestGUI:
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
             
-            # Görüntüyü yükle ve dönüştür
-            image = Image.open(self.current_image_path).convert('RGB')
+            # Görüntüyü yükle
+            if self.current_zip_image:
+                # ZIP dosyasından görüntü yükle
+                with zipfile.ZipFile(self.current_zip_file, 'r') as zip_file:
+                    with zip_file.open(self.current_zip_image) as image_file:
+                        image_data = image_file.read()
+                        image = Image.open(io.BytesIO(image_data)).convert('RGB')
+            else:
+                # Normal dosyadan görüntü yükle
+                image = Image.open(self.current_image_path).convert('RGB')
+            
+            # Görüntüyü dönüştür
             image_tensor = transform(image).unsqueeze(0).to(self.device)
             
             self.progress_var.set(60)
@@ -756,6 +933,237 @@ class SimpleModelTestGUI:
         self.status_label.configure(text="❌ Tahmin sırasında hata oluştu")
         self.progress_var.set(0)
         messagebox.showerror("Tahmin Hatası", f"Tahmin yapılırken hata oluştu:\n{error_message}")
+    
+    def batch_test_images(self):
+        """ZIP içindeki tüm görüntüleri test eder"""
+        if not self.zip_images or not self.model:
+            messagebox.showwarning("Uyarı", "ZIP dosyası yüklü değil veya model hazır değil!")
+            return
+        
+        # Onay dialog'u
+        result = messagebox.askyesno(
+            "Toplu Test", 
+            f"ZIP içindeki {len(self.zip_images)} görüntünün tamamını test etmek istiyor musunuz?\n\nBu işlem biraz zaman alabilir."
+        )
+        
+        if not result:
+            return
+        
+        # Toplu test başlat
+        self.is_batch_testing = True
+        self.batch_results = {}
+        
+        # Butonları devre dışı bırak
+        self.batch_test_btn.configure(state='disabled', text="🔄 Toplu test yapılıyor...")
+        self.predict_btn.configure(state='disabled')
+        self.select_image_btn.configure(state='disabled')
+        self.select_zip_btn.configure(state='disabled')
+        
+        # İlerleme sıfırla
+        self.progress_var.set(0)
+        self.status_label.configure(text="🚀 Toplu test başlatılıyor...")
+        
+        # Thread'de çalıştır
+        thread = threading.Thread(target=self._batch_test_worker)
+        thread.daemon = True
+        thread.start()
+    
+    def _batch_test_worker(self):
+        """Toplu test işlemini gerçekleştirir"""
+        try:
+            total_images = len(self.zip_images)
+            
+            # Görüntü dönüşümü
+            transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+            
+            for i, image_path in enumerate(self.zip_images):
+                try:
+                    # İlerleme güncelle
+                    progress = (i / total_images) * 100
+                    self.progress_var.set(progress)
+                    
+                    image_name = os.path.basename(image_path)
+                    self.root.after(0, lambda name=image_name: self.status_label.configure(
+                        text=f"🔄 Test ediliyor: {name} ({i+1}/{total_images})"
+                    ))
+                    
+                    # ZIP'ten görüntü yükle
+                    with zipfile.ZipFile(self.current_zip_file, 'r') as zip_file:
+                        with zip_file.open(image_path) as image_file:
+                            image_data = image_file.read()
+                            image = Image.open(io.BytesIO(image_data)).convert('RGB')
+                    
+                    # Görüntüyü dönüştür ve tahmin yap
+                    image_tensor = transform(image).unsqueeze(0).to(self.device)
+                    
+                    with torch.no_grad():
+                        outputs = self.model(image_tensor)
+                        probabilities = torch.softmax(outputs, dim=1)
+                        confidence, predicted = torch.max(probabilities, 1)
+                        
+                        predicted_class = self.class_names[predicted.item()]
+                        confidence_score = confidence.item()
+                    
+                    # Sonucu kaydet
+                    self.batch_results[image_path] = {
+                        'predicted_class': predicted_class,
+                        'confidence': confidence_score,
+                        'probabilities': probabilities[0].cpu().numpy()
+                    }
+                    
+                except Exception as e:
+                    print(f"Hata - {image_path}: {str(e)}")
+                    self.batch_results[image_path] = {
+                        'error': str(e)
+                    }
+            
+            # Tamamlandı
+            self.progress_var.set(100)
+            self.root.after(0, self._batch_test_completed)
+            
+        except Exception as e:
+            self.root.after(0, self._batch_test_error, str(e))
+    
+    def _batch_test_completed(self):
+        """Toplu test tamamlandığında çalışır"""
+        self.is_batch_testing = False
+        
+        # Butonları tekrar etkinleştir
+        self.batch_test_btn.configure(state='normal', text="🚀 Tüm Görüntüleri Test Et")
+        self.predict_btn.configure(state='normal')
+        self.select_image_btn.configure(state='normal')
+        self.select_zip_btn.configure(state='normal')
+        
+        # Sonuçları göster
+        self.show_batch_results()
+        
+        self.status_label.configure(text="✅ Toplu test tamamlandı!")
+    
+    def _batch_test_error(self, error_message):
+        """Toplu test hatası"""
+        self.is_batch_testing = False
+        
+        # Butonları tekrar etkinleştir
+        self.batch_test_btn.configure(state='normal', text="🚀 Tüm Görüntüleri Test Et")
+        self.predict_btn.configure(state='normal')
+        self.select_image_btn.configure(state='normal')
+        self.select_zip_btn.configure(state='normal')
+        
+        self.status_label.configure(text="❌ Toplu test sırasında hata oluştu")
+        messagebox.showerror("Toplu Test Hatası", f"Toplu test sırasında hata oluştu:\n{error_message}")
+    
+    def show_batch_results(self):
+        """Toplu test sonuçlarını gösterir"""
+        if not self.batch_results:
+            return
+        
+        # Yeni pencere oluştur
+        results_window = tk.Toplevel(self.root)
+        results_window.title("📊 Toplu Test Sonuçları")
+        results_window.geometry("800x600")
+        results_window.configure(bg=self.colors['bg'])
+        
+        # Başlık
+        title_label = tk.Label(
+            results_window,
+            text="📊 Toplu Test Sonuçları",
+            bg=self.colors['bg'],
+            fg=self.colors['fg'],
+            font=('Segoe UI', 16, 'bold')
+        )
+        title_label.pack(pady=20)
+        
+        # Özet bilgiler
+        summary_frame = tk.Frame(results_window, bg=self.colors['card'])
+        summary_frame.pack(fill='x', padx=20, pady=10)
+        
+        total_images = len(self.batch_results)
+        successful_tests = len([r for r in self.batch_results.values() if 'error' not in r])
+        failed_tests = total_images - successful_tests
+        
+        summary_text = f"📈 Toplam: {total_images} | ✅ Başarılı: {successful_tests} | ❌ Hatalı: {failed_tests}"
+        
+        tk.Label(
+            summary_frame,
+            text=summary_text,
+            bg=self.colors['card'],
+            fg=self.colors['fg'],
+            font=('Segoe UI', 12, 'bold')
+        ).pack(pady=10)
+        
+        # Sonuçlar tablosu
+        table_frame = tk.Frame(results_window, bg=self.colors['bg'])
+        table_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        # Treeview
+        columns = ('Görüntü', 'Tahmin', 'Güven', 'Durum')
+        results_tree = ttk.Treeview(
+            table_frame,
+            columns=columns,
+            show='headings',
+            style='Modern.Treeview'
+        )
+        
+        # Sütun başlıkları
+        results_tree.heading('Görüntü', text='🖼️ Görüntü')
+        results_tree.heading('Tahmin', text='🎯 Tahmin')
+        results_tree.heading('Güven', text='📊 Güven')
+        results_tree.heading('Durum', text='✅ Durum')
+        
+        # Sütun genişlikleri
+        results_tree.column('Görüntü', width=200, anchor='w')
+        results_tree.column('Tahmin', width=150, anchor='w')
+        results_tree.column('Güven', width=100, anchor='center')
+        results_tree.column('Durum', width=100, anchor='center')
+        
+        # Scrollbar
+        results_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=results_tree.yview)
+        results_tree.configure(yscrollcommand=results_scrollbar.set)
+        
+        # Sonuçları ekle
+        for image_path, result in self.batch_results.items():
+            image_name = os.path.basename(image_path)
+            
+            if 'error' in result:
+                results_tree.insert('', 'end', values=(
+                    image_name,
+                    "HATA",
+                    "-",
+                    "❌ Başarısız"
+                ), tags=('error',))
+            else:
+                confidence_percent = f"%{result['confidence']*100:.1f}"
+                results_tree.insert('', 'end', values=(
+                    image_name,
+                    result['predicted_class'].title(),
+                    confidence_percent,
+                    "✅ Başarılı"
+                ), tags=('success',))
+        
+        # Tag renklerini ayarla
+        results_tree.tag_configure('success', background='#d4edda', foreground='#155724')
+        results_tree.tag_configure('error', background='#f8d7da', foreground='#721c24')
+        
+        # Pack
+        results_tree.pack(side='left', fill='both', expand=True)
+        results_scrollbar.pack(side='right', fill='y')
+        
+        # Kapatma butonu
+        close_btn = tk.Button(
+            results_window,
+            text="❌ Kapat",
+            command=results_window.destroy,
+            bg=self.colors['error'],
+            fg='white',
+            font=('Segoe UI', 11, 'bold'),
+            relief='flat',
+            cursor='hand2'
+        )
+        close_btn.pack(pady=20)
     
     def run(self):
         """Uygulamayı başlatır"""
