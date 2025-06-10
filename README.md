@@ -1,63 +1,65 @@
-# 🔍 Vision Transformer ile Görüntü Sınıflandırma Projesi
+# Görüntü Sınıflandırma Projesi
 
-Bu proje, **Vision Transformer (ViT)** teknolojisini kullanarak görüntü sınıflandırma işlemleri gerçekleştiren kapsamlı bir Python uygulamasıdır. Proje hem sıfırdan ViT modeli oluşturma hem de önceden eğitilmiş model kullanma yaklaşımlarını içermektedir.
+Bu proje, PyTorch ve Vision Transformer (ViT) kullanarak hayvan görüntülerini sınıflandırmak için geliştirilmiştir.
 
-## 🌟 Özellikler
+## Proje Yapısı
 
-- **🔧 Sıfırdan ViT Modeli**: Vision Transformer mimarisini sıfırdan inşa eden kod
-- **🚀 Önceden Eğitilmiş Model**: PyTorch'un ViT-B-16 modelini kullanan transfer learning yaklaşımı
-- **📊 Kapsamlı Test Suite**: Tüm validation veri seti üzerinde detaylı performans analizi
-- **📈 Görselleştirme**: Eğitim grafikleri ve tahmin sonuçlarının görsel analizi
-- **🔍 Modüler Tasarım**: Yeniden kullanılabilir kod yapısı
-- **📋 Detaylı Raporlama**: JSON, CSV ve metin formatlarında sonuç raporları
+### Ana Dosyalar
 
-## 🏗️ Proje Yapısı
+- **`train_model.py`**: Model eğitimi için ana script
+- **`test_model.py`**: Eğitilmiş modeli test etmek için script
+- **`engine_functions.py`**: Model eğitimi ve test fonksiyonları
+- **`prediction_functions.py`**: Tahmin yapma fonksiyonları
+- **`utils.py`**: Yardımcı fonksiyonlar (görselleştirme, seed ayarlama vb.)
 
+### Fonksiyon Modülleri
+
+#### `engine_functions.py`
+- `train_step()`: Tek epoch için model eğitimi
+- `test_step()`: Tek epoch için model testi
+- `train_model()`: Tam eğitim döngüsü
+
+#### `prediction_functions.py`
+- `pred_and_plot_image()`: Tek görüntü üzerinde tahmin yapma ve görselleştirme
+
+#### `utils.py`
+- `plot_loss_curves()`: Eğitim eğrilerini çizme
+- `set_seeds()`: Rastgele seed ayarlama
+- `accuracy_fn()`: Doğruluk hesaplama
+
+## Kullanım
+
+### Model Eğitimi
+```python
+python train_model.py
 ```
-Image-Classification/
-├── 📁 going_modular/           # Modüler kod yapısı
-│   └── going_modular/
-│       ├── engine.py           # Eğitim döngüsü
-│       ├── model_builder.py    # Model oluşturma fonksiyonları
-│       ├── predictions.py      # Tahmin fonksiyonları
-│       ├── train.py           # Eğitim scripti
-│       └── utils.py           # Yardımcı fonksiyonlar
-├── 📄 image_classifier_from_scratch.py    # Sıfırdan ViT implementasyonu
-├── 📄 train_using_pretrained_model_image_classifier.py  # Transfer learning
-├── 📄 test_model.py           # Model test ve değerlendirme
-├── 📄 helper_functions.py     # Yardımcı fonksiyonlar
-└── 📄 README.md              # Bu dosya
+
+### Model Testi
+```python
+python test_model.py
 ```
 
-## 🧠 Vision Transformer Mimarisi
+## Özellikler
 
-Bu projede implementasyonu yapılan Vision Transformer aşağıdaki bileşenleri içerir:
+- **Vision Transformer (ViT-B/16)** kullanımı
+- **Transfer Learning** ile önceden eğitilmiş ağırlıklar
+- **Veri artırma** teknikleri
+- **Learning Rate Scheduler** ile dinamik öğrenme oranı
+- **Kapsamlı metrik hesaplama** (Precision, Recall, F1-Score)
+- **Confusion Matrix** görselleştirme
+- **Otomatik test sonuçları** kaydetme
 
-### 🔹 Ana Bileşenler
-- **Patch Embedding**: Görüntüleri sabit boyutlu patch'lere böler ve embedding vektörlerine dönüştürür
-- **Multi-Head Self-Attention**: Patch'ler arası ilişkileri öğrenir
-- **MLP Blocks**: Feed-forward neural network katmanları
-- **Transformer Encoder**: Attention ve MLP bloklarını birleştirir
-- **Classification Head**: Final sınıflandırma katmanı
+## Gereksinimler
 
-### 🔹 Teknik Detaylar
-- **Patch Size**: 16x16 piksel
-- **Embedding Dimension**: 768
-- **Attention Heads**: 12
-- **Transformer Layers**: 12
-- **MLP Size**: 3072
-
-## 🚀 Kurulum ve Kullanım
-
-### Gerekli Kütüphaneler
+Gerekli paketler `requirements.txt` dosyasında listelenmiştir:
 
 ```bash
-pip install torch torchvision matplotlib pandas tqdm pillow torchinfo
+pip install -r requirements.txt
 ```
 
-### 📁 Veri Yapısı
+## Veri Yapısı
 
-Veri setinizi aşağıdaki yapıda organize edin:
+Proje aşağıdaki veri yapısını bekler:
 
 ```
 yazlab-data/
@@ -71,99 +73,26 @@ yazlab-data/
     └── ...
 ```
 
-### 🏃‍♂️ Modelleri Çalıştırma
+## Çıktılar
 
-#### 1. Sıfırdan ViT Modeli
-```bash
-python image_classifier_from_scratch.py
-```
+### Eğitim Sonrası
+- `animal_classifier_vit.pth`: Eğitilmiş model ağırlıkları
+- `confusion_matrix.png`: Confusion matrix görselleştirmesi
+- `model_metrics.png`: Detaylı metrik görselleştirmeleri
+- `model_metrics.json`: JSON formatında metrikler
 
-#### 2. Önceden Eğitilmiş Model ile Transfer Learning
-```bash
-python train_using_pretrained_model_image_classifier.py
-```
+### Test Sonrası
+- `test_results/`: Test sonuçları klasörü
+  - `all_results.json`: Tüm test sonuçları
+  - `summary.json`: Özet sonuçlar
+  - `results.csv`: CSV formatında sonuçlar
+  - `summary_report.txt`: Metin formatında özet rapor
 
-#### 3. Model Test ve Değerlendirme
-```bash
-python test_model.py
-```
+## Modüler Yapı
 
-## 📊 Model Performansı
+Proje, `going_modular` paketinden bağımsız hale getirilmiş ve tüm fonksiyonlar ana dizinde ayrı modüller halinde organize edilmiştir. Bu yapı:
 
-### 🎯 Değerlendirme Metrikleri
-- **Genel Doğruluk Oranı**: Tüm test verisi üzerindeki başarı
-- **Sınıf Bazında Doğruluk**: Her sınıf için ayrı performans analizi
-- **Güven Skorları**: Her tahmin için güven aralığı
-- **Confusion Matrix**: Detaylı hata analizi
-
-### 📈 Çıktı Formatları
-- **JSON**: Detaylı sonuçlar ve metadata
-- **CSV**: Tabular veri analizi için
-- **Görsel**: Tahmin örnekleri ve grafikler
-- **Metin Raporu**: Özet istatistikler
-
-## 🔧 Özelleştirme
-
-### Model Hiperparametreleri
-```python
-# Eğitim parametreleri
-BATCH_SIZE = 32
-LEARNING_RATE = 1e-4
-EPOCHS = 10
-IMG_SIZE = 224
-
-# ViT parametreleri
-patch_size = 16
-embedding_dim = 768
-num_heads = 12
-num_transformer_layers = 12
-```
-
-### Veri Augmentasyonu
-```python
-transforms.Compose([
-    transforms.Resize((IMG_SIZE, IMG_SIZE)),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomRotation(10),
-    transforms.ColorJitter(brightness=0.2),
-    transforms.ToTensor(),
-])
-```
-
-## 📚 Kullanılan Teknolojiler
-
-| Teknoloji | Versiyon | Açıklama |
-|-----------|----------|----------|
-| **PyTorch** | 2.x | Derin öğrenme framework'ü |
-| **Torchvision** | 0.15+ | Görüntü işleme ve pretrained modeller |
-| **Transformers** | Custom | Vision Transformer implementasyonu |
-| **Matplotlib** | 3.x | Veri görselleştirme |
-| **Pandas** | 1.x | Veri analizi |
-| **PIL** | 8.x | Görüntü işleme |
-
-## 🤝 Katkıda Bulunma
-
-1. Bu repository'yi fork edin
-2. Feature branch oluşturun (`git checkout -b feature/AmazingFeature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add some AmazingFeature'`)
-4. Branch'inizi push edin (`git push origin feature/AmazingFeature`)
-5. Pull Request oluşturun
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.
-
-## 🙏 Teşekkürler
-
-- **Attention Is All You Need** makalesinin yazarları
-- **An Image is Worth 16x16 Words** makalesinin yazarları
-- PyTorch ve Torchvision geliştiricileri
-- Açık kaynak topluluğu
-
-## 📞 İletişim
-
-Proje hakkında sorularınız için issue açabilir veya pull request gönderebilirsiniz.
-
----
-
-⭐ **Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!** ⭐
+- **Daha kolay bakım** sağlar
+- **Fonksiyonları yeniden kullanılabilir** hale getirir
+- **Kod organizasyonunu** iyileştirir
+- **Import bağımlılıklarını** azaltır

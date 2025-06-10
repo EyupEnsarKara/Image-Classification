@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from going_modular.going_modular.predictions import pred_and_plot_image
+from prediction_functions import pred_and_plot_image
 import os
 from PIL import Image
 import torchvision.transforms as transforms
@@ -159,19 +159,19 @@ def test_all_validation_images():
     }
     
     # Sonuçları kaydet
-    # 1. Tüm sonuçları JSON olarak kaydet
+    # Tüm sonuçları JSON olarak kaydet
     with open(os.path.join(test_dir, "all_results.json"), "w", encoding="utf-8") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
     
-    # 2. Özet sonuçları JSON olarak kaydet
+    # Özet sonuçları JSON olarak kaydet
     with open(os.path.join(test_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=4, ensure_ascii=False)
     
-    # 3. Sonuçları CSV olarak kaydet
+    # Sonuçları CSV olarak kaydet
     df = pd.DataFrame(results)
     df.to_csv(os.path.join(test_dir, "results.csv"), index=False)
     
-    # 4. Özet raporu oluştur
+    # Özet raporu oluştur
     report = f"""=== Test Sonuçları Özeti ===
 Test Tarihi: {summary['test_date']}
 Toplam Görüntü Sayısı: {summary['total_images']}
