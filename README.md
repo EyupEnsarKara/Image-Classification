@@ -741,19 +741,6 @@ python simple_model_gui.py  # GUI çalışıyor mu?
 
 ---
 
-## 📄 Lisans
-
-Bu proje **MIT Lisansı** altında dağıtılmaktadır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
-
-### 📋 **Lisans Özeti**
-- ✅ **Ticari kullanım** izinli
-- ✅ **Değiştirme** izinli  
-- ✅ **Dağıtım** izinli
-- ✅ **Özel kullanım** izinli
-- ❗ **Sorumluluk** yok
-- ❗ **Garanti** yok
-
----
 
 ## 🙏 Teşekkürler
 
@@ -780,21 +767,6 @@ Bu proje **MIT Lisansı** altında dağıtılmaktadır. Detaylar için [LICENSE]
 
 ## 🌟 **Projeyi Beğendiyseniz Yıldız Vermeyi Unutmayın!** ⭐
 
-[![Star on GitHub](https://img.shields.io/github/stars/username/Image-Classification.svg?style=social)](https://github.com/username/Image-Classification/stargazers)
 
-**Made with ❤️ and 🤖 AI**
-
----
-
-### 📈 **Proje İstatistikleri**
-
-![GitHub repo size](https://img.shields.io/github/repo-size/username/Image-Classification)
-![GitHub code size](https://img.shields.io/github/languages/code-size/username/Image-Classification)
-![GitHub last commit](https://img.shields.io/github/last-commit/username/Image-Classification)
-![GitHub issues](https://img.shields.io/github/issues/username/Image-Classification)
-
----
-
-**🚀 Happy Coding! | 🤖 AI ile Geleceği Keşfedin!**
 
 </div>
